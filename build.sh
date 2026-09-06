@@ -35,8 +35,35 @@ cd "$UPSTREAM_DIR"
     -isystem "$ABS_MUSL_DIR/include" \
     -static -nostdlib -mcmodel=large -fno-pic -mno-red-zone -fno-stack-protector -O2
 
-make -j"$(nproc)"
-make install_sw install_ssldirs
+# x86_64-elf-gcc is a bare-metal target -- its driver has no "linux"
+# OS component at all, so it doesn't recognize -pthread as a flag
+# (unlike a full linux-gnu/linux-musl cross-gcc, which bakes in a real
+# spec for it). This is NOT a loss of threading support: musl's
+# libc.a provides real pthread symbols unconditionally, no special
+# compile/link flag required (unlike glibc, which uses -pthread for
+# additional internal behavior musl doesn't need). Strip only the
+# flag string the driver rejects; everything else Configure decided
+# about threading (OPENSSL_THREADS, crypto/threads_pthread.c) is
+# untouched.
+sed -i 's/-pthread//g' Makefile
+
+# build_libs only -- NOT `all`/`build_programs`. The apps/openssl CLI
+# link step needs -ldl resolved against $MUSL_DIR/lib (its own LDFLAGS
+# don't include that -L), and this port explicitly does not attempt a
+# NeoOS-native openssl CLI at all (see docs/superpowers/specs/
+# 2026-09-06-openssl-port-design.md's refinement note, neoos-kernel
+# repo) -- building it would be pure wasted effort, not a real gap.
+make -j"$(nproc)" build_libs
+# install_dev alone (not install_sw, which pulls in install_runtime ->
+# install_programs -> the apps/openssl CLI link this port deliberately
+# skips): headers + libs + pkgconfig, depending only on
+# install_runtime_libs -> build_libs above. install_ssldirs is NOT
+# run: its recipe writes to the REAL $(OPENSSLDIR) (a known DESTDIR
+# quirk in 1.1.1's install target -- it does not consistently prefix
+# with $(DESTDIR)) which for a cross-build means the HOST's actual
+# /etc/ssl. Unneeded anyway: the cert bundle this port cares about is
+# staged directly below, into $PREFIX, not the host filesystem.
+make install_dev
 
 cd ..
 mkdir -p "$PREFIX/etc/ssl"
