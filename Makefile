@@ -1,4 +1,4 @@
-# NeoOS OpenSSL 1.1.1 build
+# NeoOS OpenSSL 3.5.8 build
 
 MUSL_DIR ?= ../neoos-musl/build-output
 PREFIX ?= build-output
@@ -34,5 +34,5 @@ verify:
 	fi
 
 help:
-	@echo "NeoOS OpenSSL 1.1.1 build"
+	@echo "NeoOS OpenSSL 3.5.8 build"
 	@echo "Usage: make [MUSL_DIR=path]"

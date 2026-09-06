@@ -18,7 +18,7 @@ fi
 ABS_PREFIX="$(mkdir -p "$PREFIX" && cd "$PREFIX" && pwd)"
 ABS_MUSL_DIR="$(cd "$MUSL_DIR" && pwd)"
 
-echo "Building OpenSSL 1.1.1 for NeoOS..."
+echo "Building OpenSSL 3.5.8 for NeoOS..."
 cd "$UPSTREAM_DIR"
 
 # linux-x86_64, not a NeoOS-specific target: it only assumes libc
@@ -29,11 +29,13 @@ cd "$UPSTREAM_DIR"
 # 2026-09-06-openssl-port-design.md section 4 (neoos-kernel repo).
 ./Configure linux-x86_64 \
     --cross-compile-prefix=x86_64-elf- \
-    no-shared no-dso no-dynamic-engine no-tests \
+    no-shared no-dso no-engine no-tests \
     --openssldir=/etc/ssl \
     --prefix="$ABS_PREFIX" \
+    --libdir=lib \
     -isystem "$ABS_MUSL_DIR/include" \
-    -static -nostdlib -mcmodel=large -fno-pic -mno-red-zone -fno-stack-protector -O2
+    -static -nostdlib -mcmodel=large -fno-pic -mno-red-zone -fno-stack-protector -O2 \
+    -ffunction-sections -fdata-sections
 
 # x86_64-elf-gcc is a bare-metal target -- its driver has no "linux"
 # OS component at all, so it doesn't recognize -pthread as a flag
@@ -58,11 +60,12 @@ make -j"$(nproc)" build_libs
 # install_programs -> the apps/openssl CLI link this port deliberately
 # skips): headers + libs + pkgconfig, depending only on
 # install_runtime_libs -> build_libs above. install_ssldirs is NOT
-# run: its recipe writes to the REAL $(OPENSSLDIR) (a known DESTDIR
-# quirk in 1.1.1's install target -- it does not consistently prefix
-# with $(DESTDIR)) which for a cross-build means the HOST's actual
-# /etc/ssl. Unneeded anyway: the cert bundle this port cares about is
-# staged directly below, into $PREFIX, not the host filesystem.
+# run: this port never needed it (the cert bundle it cares about is
+# staged directly below, into $PREFIX, not the host filesystem), and
+# the original 1.1.1 port found its recipe writes to the REAL
+# $(OPENSSLDIR) -- a DESTDIR quirk that made skipping it doubly
+# correct there. Not re-verified against 3.5.8 since nothing here
+# calls it either way.
 make install_dev
 
 cd ..

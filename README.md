@@ -1,7 +1,8 @@
 # NeoOS OpenSSL
 
-OpenSSL 1.1.1 (pinned to `OpenSSL_1_1_1w`, the final 1.1.1 release),
-built for NeoOS: static `libssl.a`/`libcrypto.a`, with real
+OpenSSL 3.5.8 (pinned to `openssl-3.5.8`, OpenSSL's current LTS
+branch -- upgraded from the original 1.1.1w pin once curl required
+3.0.0+), built for NeoOS: static `libssl.a`/`libcrypto.a`, with real
 certificate-chain verification against a bundled CA store (curl's own
 published `cacert.pem`).
 
